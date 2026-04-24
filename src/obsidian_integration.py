@@ -25,7 +25,13 @@ class ObsidianBrain:
 
     def __init__(self, obsidian_path=None, api_key=None, api_url=None):
         if obsidian_path is None:
-            obsidian_path = os.environ.get("JARVIS_OBSIDIAN_PATH", "C:\\Users\\jamie\\Documents\\JARVIS-Brain")
+            # Try environment variable first, then default based on OS
+            obsidian_path = os.environ.get("JARVIS_OBSIDIAN_PATH", "")
+            if not obsidian_path:
+                # Use a path in the data directory for Docker/Umbrel
+                data_dir = os.environ.get("JARVIS_DATA", "/tmp/jarvis_data")
+                obsidian_path = os.path.join(data_dir, "obsidian_vault")
+        
         self.obsidian_path = Path(obsidian_path)
         self.api_key = (api_key if api_key is not None else os.environ.get("JARVIS_OBSIDIAN_API_KEY", "")).strip()
         self.api_url = (api_url if api_url is not None else os.environ.get("JARVIS_OBSIDIAN_API_URL", "http://127.0.0.1:27123")).strip()
@@ -38,7 +44,9 @@ class ObsidianBrain:
         self.vault_index_path = self.generated_path / "JARVIS Vault Index.md"
         self.main_brain_path = self.generated_path / "JARVIS Main Brain.md"
         self.last_link_summary = {}
+        self._enabled = True
 
+        # Try to create directories, but don't fail if we can't (Docker/Umbrel might have restricted permissions)
         for path in [
             self.active_memory_path,
             self.knowledge_base_path,
@@ -46,7 +54,12 @@ class ObsidianBrain:
             self.config_path,
             self.generated_path,
         ]:
-            path.mkdir(parents=True, exist_ok=True)
+            try:
+                path.mkdir(parents=True, exist_ok=True)
+            except (PermissionError, OSError) as e:
+                print(f"[OBSIDIAN] Warning: Cannot create directory {path}: {e}")
+                # Continue without these directories - the API might still work
+                self._enabled = False
 
     def _safe_title(self, title):
         cleaned = re.sub(r"[^\w\s-]", "", str(title)).strip()
@@ -418,5 +431,12 @@ def get_obsidian_brain():
     """Get or create the singleton Obsidian Brain instance"""
     global _obsidian_brain
     if _obsidian_brain is None:
-        _obsidian_brain = ObsidianBrain()
+        try:
+            _obsidian_brain = ObsidianBrain()
+        except Exception as e:
+            print(f"[OBSIDIAN] Failed to initialize ObsidianBrain: {e}")
+            # Return a disabled brain instance
+            _obsidian_brain = ObsidianBrain.__new__(ObsidianBrain)
+            _obsidian_brain._enabled = False
+            _obsidian_brain.obsidian_path = Path("/tmp")
     return _obsidian_brain

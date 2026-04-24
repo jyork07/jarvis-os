@@ -94,11 +94,32 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 TMPL_DIR   = os.path.join(BASE_DIR, "templates")
 
 # Data lives next to exe (or script), survives rebuilds
+# For Docker/Umbrel, use environment variables if available
 EXE_DIR    = os.path.dirname(sys.executable) if IS_FROZEN else os.path.dirname(os.path.abspath(__file__))
-DATA_DIR   = os.path.join(EXE_DIR, "jarvis_data")
-os.makedirs(DATA_DIR, exist_ok=True)
 
-CFG_FILE         = os.path.join(EXE_DIR, "jarvis.cfg")
+# Check for environment variables (Docker/Umbrel)
+JARVIS_DATA = os.environ.get("JARVIS_DATA", "")
+JARVIS_CONFIG = os.environ.get("JARVIS_CONFIG", "")
+
+if JARVIS_DATA:
+    DATA_DIR = JARVIS_DATA
+else:
+    DATA_DIR = os.path.join(EXE_DIR, "jarvis_data")
+
+# Ensure data directory exists with proper permissions
+try:
+    os.makedirs(DATA_DIR, exist_ok=True)
+except PermissionError:
+    # Fallback to temp directory if we can't write to DATA_DIR
+    DATA_DIR = os.path.join(tempfile.gettempdir(), "jarvis_data")
+    os.makedirs(DATA_DIR, exist_ok=True)
+    print(f"[JARVIS] Warning: Using temp data directory: {DATA_DIR}")
+
+if JARVIS_CONFIG:
+    CFG_FILE = JARVIS_CONFIG
+else:
+    CFG_FILE = os.path.join(EXE_DIR, "jarvis.cfg")
+
 MAP_FILE         = os.path.join(DATA_DIR, "improvement_map.json")
 SVC_CACHE_FILE   = os.path.join(DATA_DIR, "service_cache.json")
 HISTORY_DB       = os.path.join(DATA_DIR, "history.db")
@@ -1045,11 +1066,38 @@ def _transcribe_with_local_whisper(audio_bytes, filename, language="en"):
                 else:
                     raise RuntimeError(f"Audio file too small for transcription: {os.path.getsize(temp_path)} bytes")
 
-        segments, info = LOCAL_WHISPER_MODEL.transcribe(transcribe_path, language=language or "en", vad_filter=True)
-        text = " ".join(segment.text.strip() for segment in segments if segment.text and segment.text.strip()).strip()
-        if not text:
-            raise RuntimeError("Transcription produced no text")
-        return text, info
+        # Try transcription with VAD filter first, then without if it fails
+        for use_vad in [True, False]:
+            try:
+                log.info(f"Transcribing with vad_filter={use_vad}")
+                segments, info = LOCAL_WHISPER_MODEL.transcribe(
+                    transcribe_path, 
+                    language=language or "en", 
+                    vad_filter=use_vad,
+                    beam_size=5,
+                    best_of=5,
+                    condition_on_previous_text=True
+                )
+                text_parts = []
+                for segment in segments:
+                    if segment.text and segment.text.strip():
+                        text_parts.append(segment.text.strip())
+                        log.info(f"Segment: {segment.text.strip()}")
+                
+                text = " ".join(text_parts).strip()
+                if text:
+                    log.info(f"Transcription successful: {text[:50]}...")
+                    return text, info
+                elif use_vad:
+                    log.warning("VAD filtered out all audio, trying without VAD...")
+                else:
+                    raise RuntimeError("Transcription produced no text")
+            except Exception as e:
+                if not use_vad:
+                    raise
+                log.warning(f"Transcription with VAD failed: {e}, trying without VAD...")
+        
+        raise RuntimeError("Transcription failed with all methods")
     finally:
         for cleanup_path in [decoded_path, temp_path]:
             if cleanup_path and os.path.exists(cleanup_path):
@@ -1569,6 +1617,11 @@ def ws_relay(ws):
 def create_tray():
     if not HAS_TRAY or not cfgbool("jarvis", "tray_icon", True):
         return
+    
+    # Check if running in headless/Docker environment
+    if os.environ.get("DISPLAY") is None and os.name != "nt":
+        log.info("Tray icon disabled: no display available (headless/Docker mode)")
+        return
 
     def make_icon():
         img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
@@ -1585,17 +1638,20 @@ def create_tray():
         icon.stop()
         os.kill(os.getpid(), signal.SIGTERM)
 
-    icon = pystray.Icon(
-        "JARVIS",
-        make_icon(),
-        "J.A.R.V.I.S",
-        menu=pystray.Menu(
-            pystray.MenuItem("Open HUD", open_hud, default=True),
-            pystray.MenuItem("Quit", quit_app),
+    try:
+        icon = pystray.Icon(
+            "JARVIS",
+            make_icon(),
+            "J.A.R.V.I.S",
+            menu=pystray.Menu(
+                pystray.MenuItem("Open HUD", open_hud, default=True),
+                pystray.MenuItem("Quit", quit_app),
+            )
         )
-    )
-    threading.Thread(target=icon.run, daemon=True).start()
-    log.info("Tray icon active")
+        threading.Thread(target=icon.run, daemon=True).start()
+        log.info("Tray icon active")
+    except Exception as e:
+        log.warning(f"Tray icon failed (expected in Docker/headless): {e}")
 
 # ── Hotkey ─────────────────────────────────────────────────────────────────────
 _hotkey_ws_clients = []
@@ -1603,6 +1659,12 @@ _hotkey_ws_clients = []
 def setup_hotkey():
     if not HAS_KEYBOARD:
         return
+    
+    # Check if running as root (keyboard library doesn't support root on Linux)
+    if os.name != "nt" and os.geteuid() == 0:
+        log.info("Hotkey disabled: running as root (keyboard library limitation)")
+        return
+    
     def trigger():
         log.info("Hotkey: Ctrl+Space — wake word triggered")
         # Notify all connected WS clients

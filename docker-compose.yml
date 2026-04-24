@@ -1,6 +1,19 @@
 version: "3.8"
 
 services:
+  app_proxy:
+    image: getumbrel/app-proxy:v1.2.0
+    container_name: jarvis_app_proxy
+    environment:
+      - APP_HOST=jarvis
+      - APP_PORT=7474
+      - PROXY_PORT=80
+    ports:
+      - "7474:80"
+    depends_on:
+      - jarvis
+    restart: unless-stopped
+
   jarvis:
     build: .
     container_name: jarvis
@@ -10,6 +23,10 @@ services:
     environment:
       - JARVIS_CONFIG=/app/jarvis.cfg
       - JARVIS_DATA=/app/jarvis_data
+      - JARVIS_OBSIDIAN_PATH=/app/obsidian_vault
+      - JARVIS_OBSIDIAN_API_URL=http://host.docker.internal:27123
+      - JARVIS_LOCAL_WHISPER_MODEL=Systran/faster-whisper-tiny.en
+      - DISPLAY=${DISPLAY:-}
     volumes:
       - ./jarvis.cfg:/app/jarvis.cfg:ro
       - ./jarvis_data:/app/jarvis_data
