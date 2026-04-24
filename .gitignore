@@ -9,5 +9,7 @@ jarvis_data/
 dist/jarvis_data/
 *.log
 
-# Keep the packaged exe if desired, otherwise uncomment next line
-# dist/
+# Ignore large executable files (use releases instead)
+dist/*.exe
+dist/*.bat
+dist/*.ps1
