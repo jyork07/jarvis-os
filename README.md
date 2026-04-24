@@ -106,8 +106,8 @@ MIT License - see LICENSE file for details
 
 ## Support
 
-- GitHub Issues: https://github.com/openclaw/jarvis/issues
-- Documentation: https://github.com/openclaw/jarvis/wiki
+- GitHub Issues: https://github.com/jyork07/jarvis-os/issues
+- Documentation: https://github.com/jyork07/jarvis-os/wiki
 
 ## Acknowledgments
 
