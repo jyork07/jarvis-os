@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>J.A.R.V.I.S.</title>
+    <meta name="description" content="JARVIS local dashboard and chat interface">
+    <meta name="author" content="Jamie York" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="J.A.R.V.I.S.">
+    <meta property="og:description" content="JARVIS local dashboard and chat interface">
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="J.A.R.V.I.S.">
+    <meta name="twitter:description" content="JARVIS local dashboard and chat interface">
+    <script src="/static/assets/offline-fix.js?v=2"></script>
+    <script src="/static/assets/voice-mode-fix.js?v=1"></script>
+    <script src="/static/assets/hold-to-talk.js?v=5"></script>
+    <script type="module" crossorigin src="/static/assets/index-Cs1Ivm7f.js?v=2"></script>
+    <link rel="stylesheet" crossorigin href="/static/assets/index-D21BS9dW.css?v=2">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <!-- Mic button for manual toggle -->
+    <button id="mic-button" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%; background:rgba(0,212,255,0.8); border:2px solid #00d4ff; cursor:pointer; z-index:10000; display:flex; align-items:center; justify-content:center; box-shadow:0 0 20px rgba(0,212,255,0.5); transition:all 0.3s;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+    </button>
+    
+    <!-- Listening status indicator -->
+    <div id="mic-status-bubble" style="display:none; position:fixed; bottom:90px; right:20px; background:rgba(0,212,255,0.95); color:black; padding:12px 24px; border-radius:25px; font-family:sans-serif; font-weight:bold; z-index:9999; box-shadow:0 0 20px #00d4ff; pointer-events:none; backdrop-filter:blur(10px);">
+        <span style="display:inline-block; width:12px; height:12px; background:#ff4444; border-radius:50%; margin-right:10px; animation: blink 1s infinite;"></span>
+        LISTENING (Hold Space)
+    </div>
+    
+    <!-- Instructions hint -->
+    <div id="mic-hint" style="position:fixed; bottom:20px; left:20px; background:rgba(0,0,0,0.7); color:#00d4ff; padding:10px 15px; border-radius:10px; font-family:sans-serif; font-size:12px; z-index:9999; pointer-events:none;">
+        Hold <strong>SPACE</strong> to talk
+    </div>
+    
+    <style>
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        #mic-button:hover { background:rgba(0,212,255,1); transform:scale(1.1); }
+        #mic-button:active { transform:scale(0.95); }
+        #mic-button.active { background:rgba(255,68,68,0.8); border-color:#ff4444; box-shadow:0 0 20px rgba(255,68,68,0.5); }
+    </style>
+  </body>
+</html>

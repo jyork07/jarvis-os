@@ -1,0 +1,13 @@
+# Ignore local build and runtime artifacts
+.venv/
+build/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+jarvis_data/
+dist/jarvis_data/
+*.log
+
+# Keep the packaged exe if desired, otherwise uncomment next line
+# dist/

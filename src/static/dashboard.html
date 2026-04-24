@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. OS</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0f0f23 100%);
+            color: #00d4ff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-rows: 60px 1fr 120px;
+            grid-template-columns: 280px 1fr 280px;
+            height: 100vh;
+            gap: 10px;
+            padding: 10px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .top-bar h1 {
+            font-size: 24px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+
+        .datetime {
+            font-size: 16px;
+            color: #00ffff;
+        }
+
+        /* Panels */
+        .panel {
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            font-size: 14px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+            text-transform: uppercase;
+        }
+
+        /* Left Sidebar */
+        .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .stat-item {
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+
+        .progress-ring {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 5px;
+            position: relative;
+        }
+
+        .progress-ring::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 3px solid #00d4ff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            border-right-color: transparent;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .status-active {
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        /* Central Area */
+        .central-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .circle-animation {
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .circle-animation::before,
+        .circle-animation::after {
+            content: '';
+            position: absolute;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .circle-animation::before {
+            width: 340px;
+            height: 340px;
+            animation-delay: 0.5s;
+        }
+
+        .circle-animation::after {
+            width: 380px;
+            height: 380px;
+            animation-delay: 1s;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+
+        .jarvis-title {
+            font-size: 36px;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px #00d4ff;
+            margin-bottom: 10px;
+        }
+
+        .status-text {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .listening-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .listening-indicator.active {
+            display: flex;
+        }
+
+        .waveform {
+            display: flex;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .wave-bar {
+            width: 4px;
+            height: 20px;
+            background: #00d4ff;
+            border-radius: 2px;
+            animation: wave 0.5s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) { animation-delay: 0s; }
+        .wave-bar:nth-child(2) { animation-delay: 0.1s; }
+        .wave-bar:nth-child(3) { animation-delay: 0.2s; }
+        .wave-bar:nth-child(4) { animation-delay: 0.3s; }
+        .wave-bar:nth-child(5) { animation-delay: 0.4s; }
+
+        @keyframes wave {
+            0%, 100% { height: 10px; }
+            50% { height: 30px; }
+        }
+
+        /* Right Sidebar */
+        .right-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-item {
+            padding: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 5px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .history-time {
+            font-size: 10px;
+            opacity: 0.6;
+            margin-bottom: 3px;
+        }
+
+        .task-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 212, 255, 0.2);
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .task-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ffff);
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+
+        /* Bottom Section */
+        .bottom-section {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 200px 1fr 200px;
+            gap: 10px;
+        }
+
+        .voice-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .mic-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(0, 212, 255, 0.2);
+            border: 2px solid #00d4ff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .mic-button:hover {
+            background: rgba(0, 212, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .mic-button.active {
+            background: rgba(255, 68, 68, 0.4);
+            border-color: #ff4444;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .voice-text {
+            font-size: 11px;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .command-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .command-input input {
+            flex: 1;
+            padding: 12px 20px;
+            background: rgba(0, 20, 40, 0.8);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 25px;
+            color: #00d4ff;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .command-input input::placeholder {
+            color: rgba(0, 212, 255, 0.5);
+        }
+
+        .command-input input:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+        }
+
+        .send-button {
+            padding: 12px 25px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            border-radius: 25px;
+            color: #00d4ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-button:hover {
+            background: rgba(0, 212, 255, 0.4);
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .quick-btn {
+            padding: 8px 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 15px;
+            color: #00d4ff;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .quick-btn:hover {
+            background: rgba(0, 212, 255, 0.3);
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            opacity: 1;
+        }
+
+        .nav-icon {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #00d4ff;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-label {
+            font-size: 10px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 20, 40, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 212, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 212, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Top Bar -->
+        <div class="top-bar">
+            <h1>JARVIS OS</h1>
+            <div class="datetime" id="datetime"></div>
+        </div>
+
+        <!-- Left Sidebar -->
+        <div class="left-sidebar">
+            <div class="panel">
+                <div class="panel-title">System Overview</div>
+                <div class="stat-item">
+                    <div class="stat-label">CPU USAGE</div>
+                    <div class="stat-value" id="cpu-value">32%</div>
+                    <div class="progress-ring"></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">RAM USAGE</div>
+                    <div class="stat-value" id="ram-value">58%</div>
+                    <div class="progress-ring"></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">GPU USAGE</div>
+                    <div class="stat-value" id="gpu-value">24%</div>
+                    <div class="progress-ring"></div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">SYSTEM TEMP</div>
+                    <div class="stat-value" id="temp-value">42°C</div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">Status</div>
+                <div class="status-item">
+                    <span>AI STATUS</span>
+                    <span class="status-active">ACTIVE</span>
+                </div>
+                <div class="status-item">
+                    <span>VOICE STATUS</span>
+                    <span class="status-active" id="voice-status">READY</span>
+                </div>
+                <div class="status-item">
+                    <span>NETWORK</span>
+                    <span class="status-active">CONNECTED</span>
+                </div>
+                <div class="status-item">
+                    <span>UPTIME</span>
+                    <span id="uptime">00:00:00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Area -->
+        <div class="central-area panel">
+            <div class="circle-animation">
+                <div style="text-align: center;">
+                    <div class="jarvis-title">JARVIS</div>
+                    <div class="status-text" id="status-text">Initializing systems...</div>
+                </div>
+            </div>
+            <div class="listening-indicator" id="listening-indicator">
+                <span>LISTENING...</span>
+                <div class="waveform">
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                    <div class="wave-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="right-sidebar">
+            <div class="panel">
+                <div class="panel-title">History / Chats</div>
+                <div id="history-list">
+                    <div class="history-item">
+                        <div class="history-time">22:14:28</div>
+                        <div>Open Chrome</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="history-time">22:13:15</div>
+                        <div>System Status</div>
+                    </div>
+                    <div class="history-item">
+                        <div class="history-time">22:12:42</div>
+                        <div>List Files in Documents</div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-title">Active Task</div>
+                <div style="font-size: 13px; margin-bottom: 10px;">System Monitoring</div>
+                <div class="task-progress">
+                    <div class="task-progress-bar" style="width: 32%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section -->
+        <div class="bottom-section">
+            <div class="panel voice-controls">
+                <button class="mic-button" id="mic-button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="2">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </button>
+                <div class="voice-text" id="voice-text">Hold SPACE to talk</div>
+            </div>
+            <div class="panel command-input">
+                <input type="text" id="command-input" placeholder="Type a command...">
+                <button class="send-button" id="send-button">SEND</button>
+            </div>
+            <div class="panel">
+                <div class="quick-actions">
+                    <button class="quick-btn">Open Browser</button>
+                    <button class="quick-btn">System Status</button>
+                    <button class="quick-btn">List Files</button>
+                    <button class="quick-btn">Turn on WiFi</button>
+                    <button class="quick-btn">Shutdown</button>
+                </div>
+                <div class="navigation" style="margin-top: 15px;">
+                    <div class="nav-item active">
+                        <div class="nav-icon">📊</div>
+                        <div class="nav-label">Dashboard</div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-icon">📁</div>
+                        <div class="nav-label">Files</div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-icon">📱</div>
+                        <div class="nav-label">Apps</div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-icon">✓</div>
+                        <div class="nav-label">Tasks</div>
+                    </div>
+                    <div class="nav-item">
+                        <div class="nav-icon">⚙</div>
+                        <div class="nav-label">Settings</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/assets/hold-to-talk.js?v=4"></script>
+    <script>
+        // Update datetime
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'short', 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateDateTime, 1000);
+        updateDateTime();
+
+        // Update system stats
+        async function updateStats() {
+            try {
+                const response = await fetch('/api/sysinfo');
+                const data = await response.json();
+                
+                document.getElementById('cpu-value').textContent = Math.round(data.cpu) + '%';
+                document.getElementById('ram-value').textContent = Math.round(data.mem_pct) + '%';
+                document.getElementById('temp-value').textContent = '42°C';
+                
+                // Update uptime
+                if (data.uptime) {
+                    document.getElementById('uptime').textContent = data.uptime;
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+        setInterval(updateStats, 2000);
+        updateStats();
+
+        // Update history
+        async function updateHistory() {
+            try {
+                const response = await fetch('/api/history?n=10');
+                const data = await response.json();
+                
+                const historyList = document.getElementById('history-list');
+                historyList.innerHTML = '';
+                
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div class="history-time">${item.ts.split('T')[1].split('.')[0]}</div>
+                        <div>${item.content.substring(0, 50)}${item.content.length > 50 ? '...' : ''}</div>
+                    `;
+                    historyList.appendChild(div);
+                });
+            } catch (error) {
+                console.error('Failed to fetch history:', error);
+            }
+        }
+        setInterval(updateHistory, 5000);
+        updateHistory();
+
+        // Command input
+        document.getElementById('send-button').addEventListener('click', async () => {
+            const input = document.getElementById('command-input');
+            const command = input.value.trim();
+            if (!command) return;
+            
+            input.value = '';
+            
+            try {
+                const response = await fetch('/api/ollama/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: command })
+                });
+                const data = await response.json();
+                console.log('Response:', data);
+            } catch (error) {
+                console.error('Failed to send command:', error);
+            }
+        });
+
+        document.getElementById('command-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('send-button').click();
+            }
+        });
+
+        // Update listening status from hold-to-talk.js
+        document.addEventListener('jarvis-listening', (e) => {
+            const indicator = document.getElementById('listening-indicator');
+            const statusText = document.getElementById('status-text');
+            const voiceStatus = document.getElementById('voice-status');
+            const micButton = document.getElementById('mic-button');
+            const voiceText = document.getElementById('voice-text');
+            
+            if (e.detail.active) {
+                indicator.classList.add('active');
+                statusText.textContent = 'Listening for commands...';
+                voiceStatus.textContent = 'LISTENING';
+                micButton.classList.add('active');
+                voiceText.textContent = 'Listening...';
+            } else {
+                indicator.classList.remove('active');
+                statusText.textContent = 'Ready for commands';
+                voiceStatus.textContent = 'READY';
+                micButton.classList.remove('active');
+                voiceText.textContent = 'Hold SPACE to talk';
+            }
+        });
+    </script>
+</body>
+</html>

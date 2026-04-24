@@ -1,0 +1,35 @@
+name: jarvis
+version: "1.0.0"
+description: >-
+  J.A.R.V.I.S. - Just A Rather Very Intelligent System. A local AI assistant with voice activation, speech recognition, and text-to-speech capabilities. Integrates with Ollama for local LLM inference and Obsidian for persistent memory.
+icon: https://raw.githubusercontent.com/openclaw/jarvis/main/assets/icon.png
+developer: OpenClaw
+website: https://github.com/openclaw/jarvis
+submitter: OpenClaw
+category: AI
+payment: one-time
+payment-options:
+  - 5
+  - 10
+  - 20
+main: false
+ports:
+  - 7474
+  - 11434
+path: ""
+defaultPassword: ""
+dependencies:
+  - umbrel-os
+  - docker
+permission:
+  - STORAGE
+  - NETWORK
+  - BLUETOOTH
+  - CAMERA
+  - MICROPHONE
+repo: https://github.com/openclaw/jarvis
+support: https://github.com/openclaw/jarvis/issues
+gallery:
+  - https://raw.githubusercontent.com/openclaw/jarvis/main/assets/screenshot1.png
+  - https://raw.githubusercontent.com/openclaw/jarvis/main/assets/screenshot2.png
+  - https://raw.githubusercontent.com/openclaw/jarvis/main/assets/screenshot3.png

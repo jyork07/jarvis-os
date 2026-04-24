@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  jarvis:
+    build: .
+    container_name: jarvis
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+    environment:
+      - JARVIS_CONFIG=/app/jarvis.cfg
+      - JARVIS_DATA=/app/jarvis_data
+    volumes:
+      - ./jarvis.cfg:/app/jarvis.cfg:ro
+      - ./jarvis_data:/app/jarvis_data
+      - /path/to/obsidian/vault:/app/obsidian_vault:ro
+    devices:
+      - /dev/snd:/dev/snd
+    network_mode: host
+    privileged: true
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    network_mode: host
+
+volumes:
+  ollama_data:

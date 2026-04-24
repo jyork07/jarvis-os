@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS Access Config</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#06121b;color:#d7f6ff;margin:0;padding:24px}
+    .wrap{max-width:820px;margin:0 auto}
+    .card{background:#0d1b26;border:1px solid #1d4258;border-radius:12px;padding:18px;margin-bottom:16px}
+    h1,h2{margin:0 0 12px}
+    label{display:block;font-size:14px;margin:10px 0 6px;color:#9fdff5}
+    input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #2f617c;background:#08131c;color:#e8fbff;box-sizing:border-box}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{background:#00b7ff;color:#031018;border:0;border-radius:8px;padding:10px 14px;font-weight:700;cursor:pointer;margin-right:10px}
+    button.secondary{background:#173445;color:#d7f6ff}
+    .msg{margin-top:12px;padding:10px;border-radius:8px;white-space:pre-wrap}
+    .ok{background:#0f2d1f;color:#9cffc1}
+    .err{background:#341313;color:#ffb3b3}
+    .hint{font-size:13px;color:#8db8ca;margin-top:6px}
+    a{color:#6ed7ff}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>JARVIS Access Config</h1>
+      <div class="hint">Set the correct ports, Obsidian location, validate them, then save.</div>
+      <div class="hint">Main access page: <a href="/">Dashboard</a></div>
+    </div>
+
+    <div class="card">
+      <h2>Core Access</h2>
+      <div class="row">
+        <div>
+          <label>HUD Port</label>
+          <input id="hud_port" value="7474">
+        </div>
+        <div>
+          <label>OpenClaw Ports (comma separated)</label>
+          <input id="openclaw_ports" value="18789,8000,8001,9000,7500">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Ollama Port(s)</label>
+          <input id="ollama_ports" value="11434">
+        </div>
+        <div>
+          <label>Default Ollama Model</label>
+          <input id="ollama_model" value="qwen3:8b">
+        </div>
+      </div>
+      <label>Fallback Models</label>
+      <input id="fallback_models" value="qwen3:8b,qwen3:1.7b,qwen:7b">
+      <label>Obsidian Brain Path</label>
+      <input id="obsidian_path" value="C:\Users\jamie\Documents\JARVIS-Brain">
+      <label>API Token</label>
+      <input id="api_token" value="jarvis-openclaw-secret-2026">
+      <div class="hint">This page validates the Obsidian folder exists and that ports are valid before saving.</div>
+      <div style="margin-top:14px">
+        <button id="validateBtn">Validate</button>
+        <button id="saveBtn">Save</button>
+        <button class="secondary" id="reloadBtn">Reload Current Config</button>
+      </div>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+<script>
+const msg = document.getElementById('msg');
+function show(text, ok){
+  msg.className = 'msg ' + (ok ? 'ok' : 'err');
+  msg.textContent = text;
+}
+function getPayload(){
+  return {
+    jarvis: {
+      hud_port: document.getElementById('hud_port').value,
+      open_browser: 'true',
+      kiosk_mode: 'false',
+      api_token: document.getElementById('api_token').value,
+      stats_interval: '2',
+      discovery_interval: '15',
+      tray_icon: 'true'
+    },
+    openclaw: { ports: document.getElementById('openclaw_ports').value },
+    ollama: {
+      ports: document.getElementById('ollama_ports').value,
+      default_model: document.getElementById('ollama_model').value,
+      fallback_models: document.getElementById('fallback_models').value
+    },
+    jayyorkbot: { ports: '8080,7070,5050,3000' },
+    fish_tts: { ports: '7860,8765,9880' },
+    whisper: { ports: '9000,8765,5001,6006' },
+    docker: { ports: '2375,2376' },
+    gemini_proxy: { ports: '4000,4001,5000' },
+    obsidian: { path: document.getElementById('obsidian_path').value }
+  };
+}
+function fill(cfg){
+  const c = cfg || {};
+  document.getElementById('hud_port').value = c.jarvis?.hud_port || '7474';
+  document.getElementById('openclaw_ports').value = c.openclaw?.ports || '18789,8000,8001,9000,7500';
+  document.getElementById('ollama_ports').value = c.ollama?.ports || '11434';
+  document.getElementById('ollama_model').value = c.ollama?.default_model || 'qwen3:8b';
+  document.getElementById('fallback_models').value = c.ollama?.fallback_models || 'qwen3:8b,qwen3:1.7b,qwen:7b';
+  document.getElementById('obsidian_path').value = c.obsidian?.path || 'C:\\Users\\jamie\\Documents\\JARVIS-Brain';
+  document.getElementById('api_token').value = c.jarvis?.api_token || 'jarvis-openclaw-secret-2026';
+}
+async function loadConfig(){
+  const r = await fetch('/api/config');
+  const data = await r.json();
+  if(data.ok) fill(data.config);
+}
+document.getElementById('reloadBtn').onclick = loadConfig;
+document.getElementById('validateBtn').onclick = async ()=>{
+  const r = await fetch('/api/config/validate', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(getPayload())});
+  const data = await r.json();
+  if(data.ok) show('Config is valid.\n\n' + JSON.stringify(data.normalized, null, 2), true);
+  else show('Validation failed:\n- ' + data.errors.join('\n- '), false);
+};
+document.getElementById('saveBtn').onclick = async ()=>{
+  const token = document.getElementById('api_token').value;
+  const r = await fetch('/api/config', {method:'POST', headers:{'Content-Type':'application/json','X-JARVIS-TOKEN':token}, body: JSON.stringify(getPayload())});
+  const data = await r.json();
+  if(data.ok) show('Saved successfully.\n' + (data.note || ''), true);
+  else show('Save failed:\n- ' + ((data.errors||[data.error||'Unknown error']).join('\n- ')), false);
+};
+loadConfig().catch(()=>show('Could not load current config.', false));
+</script>
+</body>
+</html>
